@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  namespace: paymybuddy
+spec:
+  accessModes:
+    # ReadWriteOnce = monté en lecture/écriture par un seul pod à la fois
+    # suffisant pour MySQL en mode single-node (1 replica)
+    - ReadWriteOnce
+  resources:
+    requests:
+      # 2Gi suffisant pour la base de données PayMyBuddy en dev
+      storage: 2Gi

@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  namespace: paymybuddy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mysql
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          # IfNotPresent = utilise le cache minikube si disponible
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              # Doit correspondre à SPRING_DATASOURCE_PASSWORD dans paymybuddy
+              value: password
+            - name: MYSQL_DATABASE
+              # Nom de la base créée par create.sql
+              value: db_paymybuddy
+          volumeMounts:
+            - name: mysql-storage
+              # Chemin où MySQL stocke ses données dans le container
+              mountPath: /var/lib/mysql
+            - name: mysql-init
+              # MySQL exécute automatiquement tous les .sql
+              # présents dans ce répertoire au premier démarrage
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: mysql-storage
+          # PVC pour persister les données MySQL
+          persistentVolumeClaim:
+            claimName: mysql-pvc
+        - name: mysql-init
+          # Monte les scripts SQL du ConfigMap dans le container
+          configMap:
+            name: mysql-init-scripts

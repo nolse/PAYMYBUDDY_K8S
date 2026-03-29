@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: paymybuddy
+  namespace: paymybuddy
+spec:
+  # NodePort = expose l'application sur un port fixe de la VM
+  # accessible depuis l'hôte Windows via http://192.168.56.100:30080
+  type: NodePort
+  selector:
+    app: paymybuddy
+  ports:
+    - port: 8080
+      targetPort: 8080
+      # nodePort doit être entre 30000-32767
+      # 30080 = convention pour les apps web en dev
+      nodePort: 30080

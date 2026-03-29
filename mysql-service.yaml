@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: paymybuddy
+spec:
+  # ClusterIP = accessible uniquement à l'intérieur du cluster
+  # PayMyBuddy s'y connecte via l'URL jdbc:mysql://mysql:3306/db_paymybuddy
+  # "mysql" ici = nom du service = résolu par le DNS interne Kubernetes
+  type: ClusterIP
+  selector:
+    app: mysql
+  ports:
+    - port: 3306
+      targetPort: 3306

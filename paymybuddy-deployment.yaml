@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paymybuddy
+  namespace: paymybuddy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paymybuddy
+  template:
+    metadata:
+      labels:
+        app: paymybuddy
+    spec:
+      containers:
+        - name: paymybuddy
+          # Image buildée localement depuis le Dockerfile du projet
+          # et chargée dans minikube via : minikube image load paymybuddy:latest
+          image: paymybuddy:latest
+          # Never = n'essaie jamais de puller depuis Docker Hub
+          # obligatoire car l'image est locale (pas publiée sur Docker Hub)
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            # Variables d'environnement définies dans le Dockerfile
+            # On les surcharge ici pour pointer vers le service MySQL Kubernetes
+            - name: SPRING_DATASOURCE_USERNAME
+              value: root
+            - name: SPRING_DATASOURCE_PASSWORD
+              # Doit correspondre à MYSQL_ROOT_PASSWORD dans mysql-deployment.yaml
+              value: password
+            - name: SPRING_DATASOURCE_URL
+              # "mysql" = nom du service ClusterIP MySQL
+              # résolu automatiquement par le DNS interne Kubernetes
+              # db_paymybuddy = base créée par create.sql via le ConfigMap
+              value: jdbc:mysql://mysql:3306/db_paymybuddy
+          volumeMounts:
+            - name: paymybuddy-storage
+              # Le CDC demande de stocker les données dans /data du nœud
+              mountPath: /data
+      volumes:
+        - name: paymybuddy-storage
+          # hostPath = stockage directement sur le nœud minikube
+          # comme demandé dans le CDC : "stocker les données sur un volume
+          # mounté dans le /data de votre nœud"
+          hostPath:
+            path: /data/paymybuddy
+            type: DirectoryOrCreate

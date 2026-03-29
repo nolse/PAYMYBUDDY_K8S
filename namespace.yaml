@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: paymybuddy
+  labels:
+    # Label pour identifier facilement toutes les ressources du projet
+    project: paymybuddy
