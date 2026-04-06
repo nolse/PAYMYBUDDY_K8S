@@ -343,3 +343,24 @@ sudo chattr +i /etc/resolv.conf
 | NodePort sans TLS | Trafic HTTP en clair | Ingress + cert-manager + TLS |
 | iptables manuelles | Perdues au reboot | Service systemd |
 | Init SQL via ConfigMap | Réexécuté si pod recréé | Flyway ou Liquibase |
+
+**********************************************************
+#Illustrations :
+
+<p align="center">
+  <img src="./images/BUILD_JAR_LOAD_IMAGE.png" width="600">
+
+  <img src="./images/DEPLOY_UP.png" width="600"><br><br>
+
+  <img src="./images/CONFIG_NETWORK.png" width="600"><br><br>
+
+  <img src="./images/PAYMYBUDDY_UP.png" width="600"><br><br>
+
+  <img src="./images/LOGIN_PAYMYBUDDY.png" width="600"><br><br>
+
+  <img src="./images/KUBECTL_EXEC.png" width="600"><br><br>
+
+  <img src="./images/DATABASE_UP.png" width="600"><br><br>
+
+  <img src="./images/CLEAN_UP.png" width="600"><br><br>
+</p>
