@@ -1,0 +1,10 @@
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/service/UserServiceTest.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/repository/BankAccountRepositoryIT.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/repository/ConnectionRepositoryIT.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/PayMyBuddyApplicationTests.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/service/TransactionServiceTest.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/service/BankAccountServiceTest.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/service/ConnectionServiceTest.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/repository/UserRepositoryIT.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/service/UserServiceIT.java
+/home/vagrant/paymybuddy_1/PayMyBuddy/src/test/java/com/paymybuddy/paymybuddy/repository/TransactionRepositoryIT.java
