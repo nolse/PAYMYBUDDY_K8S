@@ -15,36 +15,53 @@ spec:
     spec:
       containers:
         - name: paymybuddy
-          # Image buildée localement depuis le Dockerfile du projet
-          # et chargée dans minikube via : minikube image load paymybuddy:latest
-          image: paymybuddy:latest
-          # Never = n'essaie jamais de puller depuis Docker Hub
-          # obligatoire car l'image est locale (pas publiée sur Docker Hub)
-          imagePullPolicy: Never
+          # Image publiée sur Docker Hub - accessible sans configuration locale
+          image: alphabalde/paymybuddy:latest
+          # Always = force le pull depuis Docker Hub à chaque démarrage
+          # garantit que la dernière version de l'image est toujours utilisée
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           env:
-            # Variables d'environnement définies dans le Dockerfile
-            # On les surcharge ici pour pointer vers le service MySQL Kubernetes
             - name: SPRING_DATASOURCE_USERNAME
-              value: root
+              # Récupère l'utilisateur MySQL depuis le Secret mysql-secret
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: username
             - name: SPRING_DATASOURCE_PASSWORD
-              # Doit correspondre à MYSQL_ROOT_PASSWORD dans mysql-deployment.yaml
-              value: password
+              # Récupère le mot de passe MySQL depuis le Secret mysql-secret
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
             - name: SPRING_DATASOURCE_URL
-              # "mysql" = nom du service ClusterIP MySQL
+              # "mysql" = nom du Service ClusterIP MySQL
               # résolu automatiquement par le DNS interne Kubernetes
               # db_paymybuddy = base créée par create.sql via le ConfigMap
               value: jdbc:mysql://mysql:3306/db_paymybuddy
-          volumeMounts:
-            - name: paymybuddy-storage
-              # Le CDC demande de stocker les données dans /data du nœud
-              mountPath: /data
-      volumes:
-        - name: paymybuddy-storage
-          # hostPath = stockage directement sur le nœud minikube
-          # comme demandé dans le CDC : "stocker les données sur un volume
-          # mounté dans le /data de votre nœud"
-          hostPath:
-            path: /data/paymybuddy
-            type: DirectoryOrCreate
+          # readinessProbe = vérifie que l'application Spring Boot est prête
+          # à recevoir du trafic avant de l'exposer via le Service
+          readinessProbe:
+            httpGet:
+              # /login = page d'accueil de PayMyBuddy, disponible sans authentification
+              path: /login
+              port: 8080
+            # Attend 30s avant le premier check (temps de démarrage Spring Boot)
+            initialDelaySeconds: 30
+            # Vérifie toutes les 10s
+            periodSeconds: 10
+            # Déclare le pod non prêt après 6 échecs consécutifs (60s)
+            failureThreshold: 6
+          # livenessProbe = vérifie que l'application est toujours vivante
+          # Kubernetes redémarre le pod si cette probe échoue
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            # Délai plus long que readiness pour laisser l'app démarrer complètement
+            initialDelaySeconds: 60
+            # Vérifie toutes les 15s
+            periodSeconds: 15
+            # Redémarre le pod après 4 échecs consécutifs (60s)
+            failureThreshold: 4

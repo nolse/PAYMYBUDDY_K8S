@@ -16,17 +16,38 @@ spec:
       containers:
         - name: mysql
           image: mysql:5.7
-          # IfNotPresent = utilise le cache minikube si disponible
+          # IfNotPresent = utilise le cache local si l'image est déjà présente
+          # évite un pull inutile à chaque redémarrage
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3306
           env:
             - name: MYSQL_ROOT_PASSWORD
-              # Doit correspondre à SPRING_DATASOURCE_PASSWORD dans paymybuddy
-              value: password
+              # Récupère le mot de passe depuis le Secret mysql-secret
+              # évite de stocker des credentials en clair dans le manifest
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: root-password
             - name: MYSQL_DATABASE
-              # Nom de la base créée par create.sql
+              # Base de données créée automatiquement au démarrage de MySQL
+              # doit correspondre au nom utilisé dans create.sql et l'URL JDBC
               value: db_paymybuddy
+          # readinessProbe = vérifie que MySQL est prêt à accepter des connexions
+          # avant de router du trafic vers ce pod
+          # évite que PayMyBuddy tente de se connecter avant que MySQL soit opérationnel
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "mysqladmin ping -u root -p${MYSQL_ROOT_PASSWORD}"
+            # Attend 20s avant le premier check (temps de démarrage MySQL)
+            initialDelaySeconds: 20
+            # Vérifie toutes les 10s
+            periodSeconds: 10
+            # Déclare le pod non prêt après 6 échecs consécutifs (60s)
+            failureThreshold: 6
           volumeMounts:
             - name: mysql-storage
               # Chemin où MySQL stocke ses données dans le container
@@ -37,10 +58,11 @@ spec:
               mountPath: /docker-entrypoint-initdb.d
       volumes:
         - name: mysql-storage
-          # PVC pour persister les données MySQL
+          # PVC pour persister les données MySQL entre les redémarrages du pod
           persistentVolumeClaim:
             claimName: mysql-pvc
         - name: mysql-init
-          # Monte les scripts SQL du ConfigMap dans le container
+          # Monte les scripts SQL (create.sql + data.sql) depuis le ConfigMap
+          # dans le container pour l'initialisation automatique de la base
           configMap:
             name: mysql-init-scripts

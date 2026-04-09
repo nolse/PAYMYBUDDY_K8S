@@ -4,12 +4,11 @@
 #
 # Prérequis :
 #   - Minikube en cours d'exécution
-#   - Java 17 installé (bootstrap.sh)
-#   - Image paymybuddy:latest buildée et chargée dans minikube
+#   - Image alphabalde/paymybuddy:latest publiée sur Docker Hub
 #
 # Ce script gère :
 #   - La vérification des prérequis
-#   - L'ordre de déploiement (namespace → MySQL → PayMyBuddy)
+#   - L'ordre de déploiement (namespace → Secret → MySQL → PayMyBuddy)
 #   - L'attente que chaque pod soit prêt avant de continuer
 # =============================================================================
 
@@ -25,10 +24,12 @@ info() { echo -e "${YELLOW}[..] $1${NC}"; }
 err()  { echo -e "${RED}[ERR]${NC} $1"; exit 1; }
 
 # --- Attend que tous les pods d'un déploiement soient Running ---
+# Augmenté à 300s pour laisser le temps à Spring Boot de démarrer
+# et à Kubernetes de puller l'image depuis Docker Hub
 wait_for_deployment() {
   local name=$1
   local namespace=$2
-  local timeout=180
+  local timeout=300
   local elapsed=0
   info "Attente du déploiement '$name' dans le namespace '$namespace'..."
   until kubectl rollout status deployment/$name -n $namespace --timeout=10s &>/dev/null; do
@@ -52,14 +53,11 @@ minikube status | grep -q "Running" \
   || err "Minikube n'est pas démarré → lance : minikube start"
 log "Minikube OK"
 
-# Vérifie que l'image paymybuddy est bien dans le cache minikube
-# → si absente, il faut rebuilder et recharger
-minikube image ls 2>/dev/null | grep -q "paymybuddy" \
-  || err "Image paymybuddy:latest absente du cache minikube
-  → depuis ~/PayMyBuddy :
-    docker build -t paymybuddy:latest .
-    minikube image load paymybuddy:latest"
-log "Image paymybuddy:latest OK"
+# Vérifie la connexion à Docker Hub (nécessaire pour puller l'image)
+# L'image est maintenant hébergée sur Docker Hub, plus besoin du cache minikube
+docker pull alphabalde/paymybuddy:latest &>/dev/null \
+  || err "Impossible de joindre Docker Hub → vérifie ta connexion internet"
+log "Image alphabalde/paymybuddy:latest accessible sur Docker Hub"
 
 # Vérifie que l'image mysql est disponible
 minikube image ls 2>/dev/null | grep -q "mysql" || {
@@ -71,12 +69,14 @@ log "Image mysql:5.7 OK"
 
 # =============================================================================
 # ÉTAPE 1 — Nettoyage des anciens déploiements
-# Le PVC MySQL est conservé pour préserver les données
+# Le PVC MySQL est conservé pour préserver les données entre les redéploiements
+# Le Secret est recréé à chaque déploiement (données non persistantes)
 # =============================================================================
 info "=== Nettoyage des anciens déploiements ==="
 kubectl delete deployment paymybuddy mysql -n paymybuddy --ignore-not-found
 kubectl delete svc paymybuddy mysql -n paymybuddy --ignore-not-found
 kubectl delete configmap mysql-init-scripts -n paymybuddy --ignore-not-found
+kubectl delete secret mysql-secret -n paymybuddy --ignore-not-found
 info "Attente suppression des pods (15s)..."
 sleep 15
 log "Nettoyage terminé (PVC MySQL conservé)"
@@ -91,7 +91,16 @@ kubectl apply -f namespace.yaml
 log "Namespace 'paymybuddy' prêt"
 
 # =============================================================================
-# ÉTAPE 3 — ConfigMap SQL
+# ÉTAPE 3 — Secret MySQL
+# Stocke les credentials MySQL de façon sécurisée
+# Doit être créé AVANT MySQL et PayMyBuddy qui en dépendent
+# =============================================================================
+info "=== Création du Secret MySQL ==="
+kubectl apply -f mysql-secret.yaml
+log "Secret MySQL prêt"
+
+# =============================================================================
+# ÉTAPE 4 — ConfigMap SQL
 # Injecte les scripts create.sql et data.sql dans MySQL
 # → exécutés automatiquement au premier démarrage du container MySQL
 # =============================================================================
@@ -100,7 +109,7 @@ kubectl apply -f mysql-configmap.yaml
 log "ConfigMap SQL prêt"
 
 # =============================================================================
-# ÉTAPE 4 — PVC MySQL
+# ÉTAPE 5 — PVC MySQL
 # kubectl apply = ne recrée pas si déjà existant → données préservées
 # =============================================================================
 info "=== Création du PVC MySQL ==="
@@ -109,8 +118,9 @@ kubectl get pvc -n paymybuddy
 log "PVC MySQL prêt"
 
 # =============================================================================
-# ÉTAPE 5 — Déploiement MySQL
+# ÉTAPE 6 — Déploiement MySQL
 # MySQL doit être prêt AVANT PayMyBuddy qui en dépend pour sa connexion JDBC
+# La readinessProbe garantit que MySQL accepte les connexions avant de continuer
 # =============================================================================
 info "=== Déploiement MySQL ==="
 kubectl apply -f mysql-deployment.yaml
@@ -123,7 +133,9 @@ sleep 30
 log "MySQL prêt"
 
 # =============================================================================
-# ÉTAPE 6 — Déploiement PayMyBuddy
+# ÉTAPE 7 — Déploiement PayMyBuddy
+# L'image est pullée depuis Docker Hub (imagePullPolicy: Always)
+# Les readinessProbe et livenessProbe surveillent l'état de l'application
 # =============================================================================
 info "=== Déploiement PayMyBuddy ==="
 kubectl apply -f paymybuddy-deployment.yaml
