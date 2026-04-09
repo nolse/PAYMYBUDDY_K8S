@@ -101,23 +101,24 @@ PAYMYBUDDY_K8S/
 ## ⚙️ Déploiement rapide
 
 ``` bash
+## ⚙️ Déploiement rapide (utilise l'image DockerHub existante)
+# 1. Réseau + Déploiement uniquement
+cd ~/PAYMYBUDDY_K8S
+bash deploy.sh
+bash setup-network.sh
+
+---
+
+## 🔧 Build & Publication (pour les contributeurs)
 # 1. Installer Java
 bash bootstrap.sh
-
 # 2. Build app
 cd ~/PayMyBuddy
 ./mvnw clean install -DskipTests
-
-# 3. Docker
+# 3. Build & push de l'image Docker
 docker build -t USER/paymybuddy .
 docker push USER/paymybuddy
 
-# 4. Déploiement
-cd ~/PAYMYBUDDY_K8S
-bash deploy.sh
-
-# 5. Réseau
-bash setup-network.sh
 ```
 
 ------------------------------------------------------------------------
