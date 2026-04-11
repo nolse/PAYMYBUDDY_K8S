@@ -74,6 +74,21 @@ avec des manifests YAML écrits à la main.
 -   Partagé entre MySQL et l'application
 -   Utilisateur dédié `paymybuddy_user` (sans droits root)
 -   L'utilisateur root MySQL n'est pas exposé à l'application
+
+L'application Spring Boot se connectait à MySQL avec l'utilisateur root, 
+qui dispose de tous les droits sur l'ensemble du serveur de base de données. 
+C'est une mauvaise pratique car en cas de compromission de l'application, un attaquant aurait un accès total à MySQL.
+
+J'ai appliqué le principe du moindre privilège en créant un utilisateur dédié paymybuddy_user qui n'a des droits que sur la base db_paymybuddy. Concrètement :
+
+Dans le Secret Kubernetes, j'ai remplacé root par paymybuddy_user avec son propre mot de passe
+L'image MySQL officielle crée automatiquement cet utilisateur au premier démarrage via les variables MYSQL_USER et MYSQL_PASSWORD
+L'application récupère ces credentials via secretKeyRef, sans aucune valeur en dur dans les manifests
+Le compte root reste uniquement utilisé en interne par MySQL pour la probe de santé (mysqladmin ping)
+
+Résultat
+
+# L'application n'a plus accès qu'à sa propre base de données, et aucun credential n'est exposé en clair dans les fichiers YAML.
 ------------------------------------------------------------------------
 
 ## ❤️ Health Checks
