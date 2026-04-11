@@ -22,24 +22,38 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
+
           env:
-            - name: SPRING_DATASOURCE_USERNAME
-              # Récupère l'utilisateur MySQL depuis le Secret mysql-secret
+            - name: SPRING_DATASOURCE_DB
+              # Nom de la base récupéré depuis le Secret - source unique de vérité
+              # évite toute valeur en dur dans l'URL de connexion
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: username
-            - name: SPRING_DATASOURCE_PASSWORD
-              # Récupère le mot de passe MySQL depuis le Secret mysql-secret
-              valueFrom:
-                secretKeyRef:
-                  name: mysql-secret
-                  key: root-password
+                  key: mysql-database
+
             - name: SPRING_DATASOURCE_URL
               # "mysql" = nom du Service ClusterIP MySQL
               # résolu automatiquement par le DNS interne Kubernetes
-              # db_paymybuddy = base créée par create.sql via le ConfigMap
-              value: jdbc:mysql://mysql:3306/db_paymybuddy
+              # $(SPRING_DATASOURCE_DB) = interpolation Kubernetes depuis la variable ci-dessus
+              value: "jdbc:mysql://mysql:3306/$(SPRING_DATASOURCE_DB)"
+
+            - name: SPRING_DATASOURCE_USERNAME
+              # ✅ Utilisation de l'utilisateur applicatif (plus sécurisé que root)
+              # Récupéré depuis le Secret mysql-secret
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user
+
+            - name: SPRING_DATASOURCE_PASSWORD
+              # Mot de passe associé à l'utilisateur applicatif
+              # stocké dans un Secret Kubernetes
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-password
+
           # readinessProbe = vérifie que l'application Spring Boot est prête
           # à recevoir du trafic avant de l'exposer via le Service
           readinessProbe:
@@ -53,6 +67,7 @@ spec:
             periodSeconds: 10
             # Déclare le pod non prêt après 6 échecs consécutifs (60s)
             failureThreshold: 6
+
           # livenessProbe = vérifie que l'application est toujours vivante
           # Kubernetes redémarre le pod si cette probe échoue
           livenessProbe:

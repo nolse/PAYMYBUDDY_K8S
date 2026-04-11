@@ -21,18 +21,40 @@ spec:
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3306
+
           env:
             - name: MYSQL_ROOT_PASSWORD
-              # Récupère le mot de passe depuis le Secret mysql-secret
+              # Récupère le mot de passe root depuis le Secret mysql-secret
               # évite de stocker des credentials en clair dans le manifest
               valueFrom:
                 secretKeyRef:
                   name: mysql-secret
-                  key: root-password
+                  key: mysql-root-password
+
             - name: MYSQL_DATABASE
               # Base de données créée automatiquement au démarrage de MySQL
-              # doit correspondre au nom utilisé dans create.sql et l'URL JDBC
-              value: db_paymybuddy
+              # centralisée dans le Secret pour éviter les valeurs en dur
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-database
+
+            - name: MYSQL_USER
+              # ✅ MySQL va créer cet utilisateur automatiquement au premier démarrage
+              # utilisateur applicatif utilisé par PayMyBuddy
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-user
+
+            - name: MYSQL_PASSWORD
+              # Mot de passe associé à MYSQL_USER
+              # stocké dans un Secret pour la sécurité
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: mysql-password
+
           # readinessProbe = vérifie que MySQL est prêt à accepter des connexions
           # avant de router du trafic vers ce pod
           # évite que PayMyBuddy tente de se connecter avant que MySQL soit opérationnel
@@ -48,6 +70,7 @@ spec:
             periodSeconds: 10
             # Déclare le pod non prêt après 6 échecs consécutifs (60s)
             failureThreshold: 6
+
           volumeMounts:
             - name: mysql-storage
               # Chemin où MySQL stocke ses données dans le container
@@ -56,11 +79,13 @@ spec:
               # MySQL exécute automatiquement tous les .sql
               # présents dans ce répertoire au premier démarrage
               mountPath: /docker-entrypoint-initdb.d
+
       volumes:
         - name: mysql-storage
           # PVC pour persister les données MySQL entre les redémarrages du pod
           persistentVolumeClaim:
             claimName: mysql-pvc
+
         - name: mysql-init
           # Monte les scripts SQL (create.sql + data.sql) depuis le ConfigMap
           # dans le container pour l'initialisation automatique de la base

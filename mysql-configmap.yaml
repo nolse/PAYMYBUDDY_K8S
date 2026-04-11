@@ -60,6 +60,11 @@ data:
     );
 
   data.sql: |
+    -- Sélection explicite de la base avant insertion
+    -- nécessaire car data.sql est exécuté indépendamment de create.sql
+    -- par le mécanisme d'init de l'image MySQL officielle
+    USE db_paymybuddy;
+
     INSERT INTO `user` (`email`, `password`, `firstname`, `lastname`, `balance`) VALUES
         ('security@mail.com', '$2a$10$vpDkNfBtWg.ebbkL8VwaG.BrmlIlqRCd0RqoyOIb6hgRZRMfJ51xa', 'Security', 'User', 0.00),
         ('hayley@mymail.com', '$2a$10$1NDocQWD9pl52dv/cY7mmOuCYbIVTzCd6ahb5EUDQxwkDMkg1Q54y', 'Hayley', 'James', 10.00),

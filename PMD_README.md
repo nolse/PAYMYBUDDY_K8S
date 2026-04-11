@@ -72,7 +72,8 @@ avec des manifests YAML écrits à la main.
 -   Aucun mot de passe en clair
 -   Injection via `secretKeyRef`
 -   Partagé entre MySQL et l'application
-
+-   Utilisateur dédié `paymybuddy_user` (sans droits root)
+-   L'utilisateur root MySQL n'est pas exposé à l'application
 ------------------------------------------------------------------------
 
 ## ❤️ Health Checks
