@@ -59,7 +59,7 @@ spec:
           readinessProbe:
             httpGet:
               # /login = page d'accueil de PayMyBuddy, disponible sans authentification
-              path: /login
+              path: /login 
               port: 8080
             # Attend 30s avant le premier check (temps de démarrage Spring Boot)
             initialDelaySeconds: 30

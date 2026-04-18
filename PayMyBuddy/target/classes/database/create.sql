@@ -53,3 +53,6 @@ CREATE TABLE transaction (
         ON DELETE NO ACTION ON UPDATE NO ACTION,
     PRIMARY KEY (transaction_id, fk_issuer_id, fk_payee_id)
 );
+
+GRANT ALL PRIVILEGES ON db_paymybuddy.* TO 'paymybuddy_user'@'%';
+FLUSH PRIVILEGES;

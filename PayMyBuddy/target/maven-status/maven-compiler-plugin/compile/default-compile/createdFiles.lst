@@ -28,11 +28,11 @@ com/paymybuddy/paymybuddy/model/viewmodel/ConnectionViewModel.class
 com/paymybuddy/paymybuddy/controller/TransactionController.class
 com/paymybuddy/paymybuddy/config/ClockConfig.class
 com/paymybuddy/paymybuddy/service/PaginationService.class
-com/paymybuddy/paymybuddy/controller/ExceptionHandlerController.class
 com/paymybuddy/paymybuddy/controller/ProfileController.class
+com/paymybuddy/paymybuddy/controller/ExceptionHandlerController.class
 com/paymybuddy/paymybuddy/config/SecurityConfig.class
-com/paymybuddy/paymybuddy/repository/BankAccountRepository.class
 com/paymybuddy/paymybuddy/service/UserService.class
+com/paymybuddy/paymybuddy/repository/BankAccountRepository.class
 com/paymybuddy/paymybuddy/exceptions/NotAuthenticatedException.class
 com/paymybuddy/paymybuddy/exceptions/InsufficientBalanceException.class
 com/paymybuddy/paymybuddy/model/User.class
